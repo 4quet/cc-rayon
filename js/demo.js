@@ -1,8 +1,8 @@
 var container;
 var camera, scene, renderer;
 var plane, cube;
-var mouse, raycaster, isShiftDown = false;
-var rollOverMesh, rollOverMaterial;
+var mouse, raycaster;
+var rollOverMesh, rollOverMaterial, rollOverGeo;
 var cubeGeo, cubeMaterial;
 var objects = [];
 var coords = {};
@@ -78,8 +78,6 @@ function init() {
   container.appendChild( renderer.domElement );
   document.addEventListener( 'mousemove', onDocumentMouseMove, false );
   document.addEventListener( 'mousedown', onDocumentMouseDown, false );
-  document.addEventListener( 'keydown', onDocumentKeyDown, false );
-	document.addEventListener( 'keyup', onDocumentKeyUp, false );
 
   //
 
@@ -99,7 +97,8 @@ document.getElementById('view').onclick = function() {
 }
 
 document.getElementById('save').onclick = function() {
-
+  localStorage.setItem('coords', coords)
+  console.log('Save coordinates to localStorage');
 }
 
 function addCoords(x, y) {
@@ -156,34 +155,16 @@ function onDocumentMouseDown( event ) {
     voxel.position.copy( intersect.point ).add( intersect.face.normal );
     voxel.position.divideScalar( 50 ).floor().multiplyScalar( 50 ).addScalar( 25 );
 
-    // delete cube
-    if ( isShiftDown ) {
-      if ( intersect.object != plane ) {
-        scene.remove( intersect.object );
-        objects.splice( objects.indexOf( intersect.object ), 1 );
-
-        removeCoords(voxel.position.x, voxel.position.z)
-        delete voxel;
-      }
-      // create cube
+    if (intersect.object != plane) {
+      scene.remove( intersect.object );
+      objects.splice( objects.indexOf( intersect.object ), 1 );
+      removeCoords(voxel.position.x, voxel.position.z)
     } else {
-      addCoords(voxel.position.x, voxel.position.z)
       scene.add( voxel );
       objects.push( voxel );
+      addCoords(voxel.position.x, voxel.position.z)
     }
     render();
-  }
-}
-
-function onDocumentKeyDown( event ) {
-  switch( event.keyCode ) {
-    case 16: isShiftDown = true; break;
-  }
-}
-
-function onDocumentKeyUp( event ) {
-  switch ( event.keyCode ) {
-    case 16: isShiftDown = false; break;
   }
 }
 

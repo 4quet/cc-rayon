@@ -2,4 +2,4 @@
 
 Open `index.html` with your web browser.
 
-**Click** to add cubes, **Shift + click** to remove them.
+**Click** to add or delete cubes.
