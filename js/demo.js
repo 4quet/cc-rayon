@@ -1,5 +1,5 @@
 var container;
-var camera, scene, renderer;
+var camera, scene, renderer, controls;
 var plane, cube;
 var mouse, raycaster;
 var rollOverMesh, rollOverMaterial, rollOverGeo;
@@ -23,10 +23,14 @@ function init() {
   info.innerHTML = '<button id="view">View</button><br/><br/><button id="save">Save</button>';
   container.appendChild( info );
 
-
   camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
   camera.position.set( 0, 2000, 0 );
   camera.lookAt( new THREE.Vector3() );
+
+  controls = new THREE.OrbitControls( camera );
+  controls.enablePan = false
+  controls.maxPolarAngle = Math.PI/2;
+  controls.enabled = false
 
   scene = new THREE.Scene();
 
@@ -78,22 +82,24 @@ function init() {
   container.appendChild( renderer.domElement );
   document.addEventListener( 'mousemove', onDocumentMouseMove, false );
   document.addEventListener( 'mousedown', onDocumentMouseDown, false );
-
   document.addEventListener( 'touchend', onDocumentMouseDown, false );
   //
-
   window.addEventListener( 'resize', onWindowResize, false );
 }
 
 document.getElementById('view').onclick = function() {
 
-  if (topView)
+  if (topView) {
     camera.position.set(800, 500, 800);
+    rollOverMesh.visible = false
+  }
   else {
     camera.position.set(0, 2000, 0)
+    rollOverMesh.visible = true
   }
   camera.lookAt( new THREE.Vector3() );
   topView = !topView
+  controls.enabled = !controls.enabled
   render();
 }
 
@@ -129,6 +135,7 @@ function onWindowResize() {
 }
 
 function onDocumentMouseMove( event ) {
+  if (!topView) { return render(); }
   event.preventDefault();
   mouse.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
   raycaster.setFromCamera( mouse, camera );
@@ -149,6 +156,7 @@ function onDocumentMouseMove( event ) {
 }
 
 function onDocumentMouseDown( event ) {
+  if (!topView) { return render(); }
   event.preventDefault();
   mouse.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
   raycaster.setFromCamera( mouse, camera );
@@ -160,7 +168,7 @@ function onDocumentMouseDown( event ) {
     voxel.position.copy( intersect.point ).add( intersect.face.normal );
     voxel.position.divideScalar( 50 ).floor().multiplyScalar( 50 ).addScalar( 25 );
 
-    if (intersect.object != plane) {
+    if (intersect.object !== plane) {
       scene.remove( intersect.object );
       objects.splice( objects.indexOf( intersect.object ), 1 );
       removeCoords(voxel.position.x, voxel.position.z)
@@ -174,5 +182,6 @@ function onDocumentMouseDown( event ) {
 }
 
 function render() {
+  controls.update()
   renderer.render( scene, camera );
 }
