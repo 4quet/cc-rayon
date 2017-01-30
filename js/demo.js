@@ -5,7 +5,7 @@ var mouse, raycaster;
 var rollOverMesh, rollOverMaterial, rollOverGeo;
 var cubeGeo, cubeMaterial;
 var objects = [];
-var coords = {};
+var coords = [];
 var topView = true;
 
 init();
@@ -97,7 +97,7 @@ document.getElementById('view').onclick = function() {
 }
 
 document.getElementById('save').onclick = function() {
-  localStorage.setItem('coords', coords)
+  localStorage.setItem('coords', JSON.stringify(coords))
   console.log('Save coordinates to localStorage');
 }
 
@@ -106,11 +106,7 @@ function addCoords(x, y) {
   var yOffset = (y > 0) ? 25 : -25;
   var mapX = (x + xOffset) / 50 + 10
   var mapY = (y + yOffset) / 50 + 10
-  if (coords[mapX + '-' + mapY]) {
-    coords[mapX + '-' + mapY] += 1
-  } else {
-    coords[mapX + '-' + mapY] = 1
-  }
+  coords.push({x: mapX, y: mapY})
 }
 
 function removeCoords(x, y) {
@@ -118,10 +114,11 @@ function removeCoords(x, y) {
   var yOffset = (y > 0) ? 25 : -25;
   var mapX = (x + xOffset) / 50 + 10
   var mapY = (y + yOffset) / 50 + 10
-  coords[mapX + '-' + mapY] -= 1
-  if (coords[mapX + '-' + mapY] === 0) {
-    delete coords[mapX + '-' + mapY]
-  }
+  coords.forEach((element, index) => {
+    if (element.x === mapX && element.y === mapY) {
+      coords.splice(index, 1)
+    }
+  })
 }
 
 function onWindowResize() {
