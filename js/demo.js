@@ -79,6 +79,7 @@ function init() {
   document.addEventListener( 'mousemove', onDocumentMouseMove, false );
   document.addEventListener( 'mousedown', onDocumentMouseDown, false );
 
+  document.addEventListener( 'touchend', onDocumentMouseDown, false );
   //
 
   window.addEventListener( 'resize', onWindowResize, false );
@@ -134,8 +135,15 @@ function onDocumentMouseMove( event ) {
   var intersects = raycaster.intersectObjects( objects );
   if ( intersects.length > 0 ) {
     var intersect = intersects[ 0 ];
-    rollOverMesh.position.copy( intersect.point ).add( intersect.face.normal );
-    rollOverMesh.position.divideScalar( 50 ).floor().multiplyScalar( 50 ).addScalar( 25 );
+    if (intersect.object.position.y === 0) {
+      rollOverMesh.position.copy( intersect.point ).add( intersect.face.normal );
+      rollOverMesh.position.divideScalar( 50 ).floor().multiplyScalar( 50 ).addScalar( 25 );
+      rollOverMesh.material.color.setHex( 0xfeb74c )
+    }
+    else {
+      rollOverMesh.position.copy( intersect.object.position );
+      rollOverMesh.material.color.setHex( 0xff4800 )
+    }
   }
   render();
 }
