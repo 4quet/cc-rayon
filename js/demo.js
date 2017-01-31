@@ -6,7 +6,10 @@ var rollOverMesh, rollOverMaterial, rollOverGeo;
 var cubeGeo, cubeMaterial;
 var objects = [];
 var coords = [];
-var topView = true, mouseDown = false, isShiftDown = false;
+var topView = true,
+    mouseDown = false,
+    creating = false,
+    deleting = false;
 
 init();
 animate();
@@ -39,13 +42,13 @@ function init() {
 
   // roll-over helpers
   rollOverGeo = new THREE.BoxGeometry( 50, 50, 50 );
-  rollOverMaterial = new THREE.MeshBasicMaterial( { color: 0xfeb74c, opacity: 0.5, transparent: true } );
+  rollOverMaterial = new THREE.MeshBasicMaterial( { color: 0x8993a3, opacity: 0.5, transparent: true } );
   rollOverMesh = new THREE.Mesh( rollOverGeo, rollOverMaterial );
   scene.add( rollOverMesh );
 
   // cubes
   cubeGeo = new THREE.BoxGeometry( 50, 50, 50 );
-  cubeMaterial = new THREE.MeshLambertMaterial( { color: 0xfeb74c } );
+  cubeMaterial = new THREE.MeshLambertMaterial( { color: 0x8993a3 } );
 
   // grid
   var size = 500, step = 50;
@@ -86,9 +89,6 @@ function init() {
   document.addEventListener( 'mousemove', onDocumentMouseMove, false );
   document.addEventListener( 'mousedown', onDocumentMouseDown, false );
   document.addEventListener( 'mouseup', onDocumentMouseUp, false );
-  document.addEventListener( 'touchend', onDocumentMouseDown, false );
-  document.addEventListener( 'keydown', onDocumentKeyDown, false );
-	document.addEventListener( 'keyup', onDocumentKeyUp, false );
   //
   window.addEventListener( 'resize', onWindowResize, false );
 }
@@ -148,15 +148,15 @@ function onDocumentMouseMove( event ) {
   var intersects = raycaster.intersectObjects( objects );
   if ( intersects.length > 0 ) {
     var intersect = intersects[ 0 ];
-    if (intersect.object.position.y === 0) {
+    if (intersect.object === plane) {
       rollOverMesh.position.copy( intersect.point ).add( intersect.face.normal );
       rollOverMesh.position.divideScalar( 50 ).floor().multiplyScalar( 50 ).addScalar( 25 );
     }
     else {
       rollOverMesh.position.copy( intersect.object.position );
     }
-    if (isShiftDown) { rollOverMesh.material.color.setHex( 0xff4800 ) }
-    else { rollOverMesh.material.color.setHex( 0xfeb74c ) }
+    if (deleting) { rollOverMesh.material.color.setHex( 0xff4800 ) }
+    else { rollOverMesh.material.color.setHex( 0x8993a3 ) }
   }
   if (mouseDown) {
     onDocumentMouseDown(event)
@@ -165,48 +165,57 @@ function onDocumentMouseMove( event ) {
 
 function onDocumentMouseUp( event ) {
   mouseDown = false;
+  creating = false
+  deleting = false
+}
+
+function addCube(object, voxel) {
+  if (object === plane) {
+    scene.add( voxel );
+    objects.push( voxel );
+    addCoords(voxel.position.x, voxel.position.z)
+  }
+}
+
+function deleteCube(object, voxel) {
+  if (object !== plane) {
+    scene.remove( object );
+    objects.splice( objects.indexOf( object ), 1 );
+    removeCoords(voxel.position.x, voxel.position.z)
+  }
 }
 
 function onDocumentMouseDown( event ) {
   mouseDown = true
-  if (!topView) { return; }
-  event.preventDefault();
-  mouse.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
-  raycaster.setFromCamera( mouse, camera );
-  var intersects = raycaster.intersectObjects( objects );
-  if ( intersects.length > 0 ) {
-    var intersect = intersects[ 0 ];
+  if (topView) {
+    event.preventDefault();
+    mouse.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
+    raycaster.setFromCamera( mouse, camera );
+    var intersects = raycaster.intersectObjects( objects );
+    if ( intersects.length > 0 ) {
+      var intersect = intersects[ 0 ];
 
-    var voxel = new THREE.Mesh( cubeGeo, cubeMaterial );
-    voxel.position.copy( intersect.point ).add( intersect.face.normal );
-    voxel.position.divideScalar( 50 ).floor().multiplyScalar( 50 ).addScalar( 25 );
+      var voxel = new THREE.Mesh( cubeGeo, cubeMaterial );
+      voxel.position.copy( intersect.point ).add( intersect.face.normal )
+      voxel.position.divideScalar( 50 ).floor().multiplyScalar( 50 ).addScalar( 25 )
 
-    if (isShiftDown) {
-      if (intersect.object !== plane) {
-        scene.remove( intersect.object );
-        objects.splice( objects.indexOf( intersect.object ), 1 );
-        removeCoords(voxel.position.x, voxel.position.z)
+      if (creating) {
+        addCube(intersect.object, voxel)
+      }
+      else if (deleting) {
+        deleteCube(intersect.object, voxel)
+      }
+      else {
+        if (intersect.object === plane) {
+          creating = true
+          addCube(intersect.object, voxel)
+        }
+        else {
+          deleting = true
+          deleteCube(intersect.object, voxel)
+        }
       }
     }
-    else {
-      if (intersect.object === plane) {
-        scene.add( voxel );
-        objects.push( voxel );
-        addCoords(voxel.position.x, voxel.position.z)
-      }
-    }
-  }
-}
-
-function onDocumentKeyDown( event ) {
-  switch( event.keyCode ) {
-    case 16: isShiftDown = true; break;
-  }
-}
-
-function onDocumentKeyUp( event ) {
-  switch ( event.keyCode ) {
-    case 16: isShiftDown = false; break;
   }
 }
 
