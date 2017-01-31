@@ -6,7 +6,7 @@ var rollOverMesh, rollOverMaterial, rollOverGeo;
 var cubeGeo, cubeMaterial;
 var objects = [];
 var coords = [];
-var topView = true, mouseDown = false;
+var topView = true, mouseDown = false, isShiftDown = false;
 
 init();
 animate();
@@ -20,7 +20,8 @@ function init() {
   info.style.top = '10px';
   info.style.width = '100%';
   info.style.textAlign = 'center';
-  info.innerHTML = '<button id="view">View</button><br/><br/><button id="save">Save</button>';
+//  info.innerHTML = '<button id="view">View</button><br/><br/><button id="save">Save</button>';
+  info.innerHTML = '<button id="view">View</button>';
   container.appendChild( info );
 
   camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
@@ -86,6 +87,8 @@ function init() {
   document.addEventListener( 'mousedown', onDocumentMouseDown, false );
   document.addEventListener( 'mouseup', onDocumentMouseUp, false );
   document.addEventListener( 'touchend', onDocumentMouseDown, false );
+  document.addEventListener( 'keydown', onDocumentKeyDown, false );
+	document.addEventListener( 'keyup', onDocumentKeyUp, false );
   //
   window.addEventListener( 'resize', onWindowResize, false );
 }
@@ -104,10 +107,12 @@ document.getElementById('view').onclick = function() {
   controls.enabled = !controls.enabled
 }
 
+/*
 document.getElementById('save').onclick = function() {
   localStorage.setItem('coords', JSON.stringify(coords))
   console.log('Save coordinates to localStorage');
 }
+*/
 
 function addCoords(x, y) {
   var xOffset = (x > 0) ? 25 : -25;
@@ -146,12 +151,15 @@ function onDocumentMouseMove( event ) {
     if (intersect.object.position.y === 0) {
       rollOverMesh.position.copy( intersect.point ).add( intersect.face.normal );
       rollOverMesh.position.divideScalar( 50 ).floor().multiplyScalar( 50 ).addScalar( 25 );
-      rollOverMesh.material.color.setHex( 0xfeb74c )
     }
     else {
       rollOverMesh.position.copy( intersect.object.position );
-      rollOverMesh.material.color.setHex( 0xff4800 )
     }
+    if (isShiftDown) { rollOverMesh.material.color.setHex( 0xff4800 ) }
+    else { rollOverMesh.material.color.setHex( 0xfeb74c ) }
+  }
+  if (mouseDown) {
+    onDocumentMouseDown(event)
   }
 }
 
@@ -173,15 +181,32 @@ function onDocumentMouseDown( event ) {
     voxel.position.copy( intersect.point ).add( intersect.face.normal );
     voxel.position.divideScalar( 50 ).floor().multiplyScalar( 50 ).addScalar( 25 );
 
-    if (intersect.object !== plane) {
-      scene.remove( intersect.object );
-      objects.splice( objects.indexOf( intersect.object ), 1 );
-      removeCoords(voxel.position.x, voxel.position.z)
-    } else {
-      scene.add( voxel );
-      objects.push( voxel );
-      addCoords(voxel.position.x, voxel.position.z)
+    if (isShiftDown) {
+      if (intersect.object !== plane) {
+        scene.remove( intersect.object );
+        objects.splice( objects.indexOf( intersect.object ), 1 );
+        removeCoords(voxel.position.x, voxel.position.z)
+      }
     }
+    else {
+      if (intersect.object === plane) {
+        scene.add( voxel );
+        objects.push( voxel );
+        addCoords(voxel.position.x, voxel.position.z)
+      }
+    }
+  }
+}
+
+function onDocumentKeyDown( event ) {
+  switch( event.keyCode ) {
+    case 16: isShiftDown = true; break;
+  }
+}
+
+function onDocumentKeyUp( event ) {
+  switch ( event.keyCode ) {
+    case 16: isShiftDown = false; break;
   }
 }
 
