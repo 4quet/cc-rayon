@@ -6,10 +6,10 @@ var rollOverMesh, rollOverMaterial, rollOverGeo;
 var cubeGeo, cubeMaterial;
 var objects = [];
 var coords = [];
-var topView = true;
+var topView = true, mouseDown = false;
 
 init();
-render();
+animate();
 
 function init() {
   container = document.createElement( 'div' );
@@ -29,7 +29,9 @@ function init() {
 
   controls = new THREE.OrbitControls( camera );
   controls.enablePan = false
-  controls.maxPolarAngle = Math.PI/2;
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.25;
+  controls.rotateSpeed = 0.3
   controls.enabled = false
 
   scene = new THREE.Scene();
@@ -82,13 +84,13 @@ function init() {
   container.appendChild( renderer.domElement );
   document.addEventListener( 'mousemove', onDocumentMouseMove, false );
   document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+  document.addEventListener( 'mouseup', onDocumentMouseUp, false );
   document.addEventListener( 'touchend', onDocumentMouseDown, false );
   //
   window.addEventListener( 'resize', onWindowResize, false );
 }
 
 document.getElementById('view').onclick = function() {
-
   if (topView) {
     camera.position.set(800, 500, 800);
     rollOverMesh.visible = false
@@ -100,7 +102,6 @@ document.getElementById('view').onclick = function() {
   camera.lookAt( new THREE.Vector3() );
   topView = !topView
   controls.enabled = !controls.enabled
-  render();
 }
 
 document.getElementById('save').onclick = function() {
@@ -135,7 +136,7 @@ function onWindowResize() {
 }
 
 function onDocumentMouseMove( event ) {
-  if (!topView) { return render(); }
+  if (!topView) { return; }
   event.preventDefault();
   mouse.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
   raycaster.setFromCamera( mouse, camera );
@@ -152,11 +153,15 @@ function onDocumentMouseMove( event ) {
       rollOverMesh.material.color.setHex( 0xff4800 )
     }
   }
-  render();
+}
+
+function onDocumentMouseUp( event ) {
+  mouseDown = false;
 }
 
 function onDocumentMouseDown( event ) {
-  if (!topView) { return render(); }
+  mouseDown = true
+  if (!topView) { return; }
   event.preventDefault();
   mouse.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
   raycaster.setFromCamera( mouse, camera );
@@ -177,11 +182,23 @@ function onDocumentMouseDown( event ) {
       objects.push( voxel );
       addCoords(voxel.position.x, voxel.position.z)
     }
-    render();
   }
 }
 
-function render() {
+function animate() {
+  requestAnimationFrame( animate );
   controls.update()
+  TWEEN.update();
+  render();
+}
+
+function render() {
+  if(camera.position.y < 0) {
+    var targetPos = {x: camera.position.x, y:50, z:camera.position.z}
+    var tween = new TWEEN.Tween(camera.position)
+      .to(targetPos, 250)
+      .easing(TWEEN.Easing.Quadratic.Out)
+      .start()
+  }
   renderer.render( scene, camera );
 }
